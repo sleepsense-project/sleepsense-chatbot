@@ -352,7 +352,7 @@ app.use('*', (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3978;
+const PORT = process.env.PORT || 8080;
 const server = app.listen(PORT, () => {
     console.log(`
 🚀 OSA Medical Chatbot Server Started! (Gemini AI)
