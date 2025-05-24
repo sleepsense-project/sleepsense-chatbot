@@ -1,0 +1,23 @@
+﻿{
+  "name": "osa-medical-chatbot",
+  "version": "1.0.0",
+  "description": "OSA Medical Chatbot with SleepSense - Azure deployment",
+  "main": "index-gemini.js",
+  "scripts": {
+    "start": "node index-gemini.js",
+    "build": "echo 'No build step required'"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "botbuilder": "^4.23.2",
+    "dotenv": "^16.5.0",
+    "express": "^4.21.2"
+  },
+  "engines": {
+    "node": "20.x",
+    "npm": "10.x"
+  },
+  "keywords": ["osa", "medical", "chatbot", "sleepsense", "azure"],
+  "author": "OSA Research Team",
+  "license": "MIT"
+}

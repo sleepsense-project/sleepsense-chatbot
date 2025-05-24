@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SleepSense OSA Medical Assistant</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+            height: 700px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            color: white;
+            padding: 25px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 2px,
+                rgba(255,255,255,0.03) 2px,
+                rgba(255,255,255,0.03) 4px
+            );
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .chat-header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .status-indicator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            scroll-behavior: smooth;
+        }
+
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+
+        .message.user .message-avatar {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            position: relative;
+            word-wrap: break-word;
+            line-height: 1.5;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            border: 1px solid #e1e8ed;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .message.user .message-time {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #3498db;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes typing {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e1e8ed;
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .quick-action {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            border: 1px solid #dee2e6;
+            border-radius: 20px;
+            padding: 8px 15px;
+            font-size: 13px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        .quick-action:hover {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 2px solid #e1e8ed;
+            border-radius: 25px;
+            padding: 12px 20px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            resize: none;
+            min-height: 50px;
+            max-height: 120px;
+            font-family: inherit;
+        }
+
+        .chat-input:focus {
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .send-button {
+            width: 50px;
+            height: 50px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+
+        .send-button:active {
+            transform: scale(0.95);
+        }
+
+        .send-button:disabled {
+            background: #bdc3c7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .info-panel {
+            background: rgba(52, 152, 219, 0.1);
+            border-left: 4px solid #3498db;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 0 8px 8px 0;
+            font-size: 14px;
+            color: #2c3e50;
+        }
+
+        .disclaimer {
+            background: rgba(231, 76, 60, 0.1);
+            border-left: 4px solid #e74c3c;
+            padding: 12px;
+            margin-top: 10px;
+            border-radius: 0 6px 6px 0;
+            font-size: 13px;
+            color: #c0392b;
+        }
+
+        .connection-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #2ecc71;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 25px;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .connection-status.offline {
+            background: #e74c3c;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+                margin: 0;
+            }
+
+            .chat-header h1 {
+                font-size: 24px;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .quick-actions {
+                flex-wrap: wrap;
+            }
+
+            .quick-action {
+                font-size: 12px;
+                padding: 6px 12px;
+            }
+        }
+
+        /* Dark mode support */
+        @media (prefers-color-scheme: dark) {
+            .chat-messages {
+                background: #2c3e50;
+            }
+
+            .message.bot .message-content {
+                background: #34495e;
+                color: #ecf0f1;
+                border-color: #4a5f7a;
+            }
+
+            .chat-input {
+                background: #34495e;
+                color: #ecf0f1;
+                border-color: #4a5f7a;
+            }
+
+            .info-panel {
+                background: rgba(52, 152, 219, 0.2);
+                color: #ecf0f1;
+            }
+        }
+
+        /* Medical content styling */
+        .medical-content {
+            background: rgba(46, 204, 113, 0.1);
+            border-left: 3px solid #2ecc71;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .technical-content {
+            background: rgba(155, 89, 182, 0.1);
+            border-left: 3px solid #9b59b6;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Loading animation */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(52, 152, 219, 0.3);
+            border-radius: 50%;
+            border-top-color: #3498db;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="status-indicator">
+                <div class="status-dot"></div>
+                <span>Online</span>
+            </div>
+            <h1>🏥 OSA Medical Assistant</h1>
+            <p>Powered by SleepSense AI & Google Gemini</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages">
+            <div class="info-panel">
+                <strong>🔬 Selamat datang di OSA Medical Assistant!</strong><br>
+                Saya dapat membantu Anda dengan informasi tentang OSA, teknologi SleepSense, troubleshooting device, dan interpretasi dasar data monitoring.
+            </div>
+
+            <div class="message bot">
+                <div class="message-avatar">🤖</div>
+                <div class="message-content">
+                    <strong>👋 Halo! Saya adalah AI assistant untuk sistem monitoring OSA SleepSense.</strong>
+                    <br><br>
+                    Saya dapat membantu Anda dengan:
+                    <br>
+                    🔬 <strong>Informasi Medis OSA</strong> - Penjelasan, statistik, dampak kesehatan
+                    <br>
+                    🔧 <strong>Panduan SleepSense</strong> - Setup, troubleshooting, maintenance
+                    <br>
+                    📊 <strong>Interpretasi Data</strong> - AHI classification, kapan konsultasi dokter
+                    <br>
+                    💡 <strong>Tips Kesehatan</strong> - Sleep hygiene, lifestyle modifications
+                    <br><br>
+                    Silakan pilih topik di bawah atau tanyakan langsung! 😊
+                    <div class="disclaimer">
+                        ⚠️ <strong>Disclaimer:</strong> Informasi ini untuk edukasi. Konsultasi dokter spesialis untuk diagnosis dan terapi definitif.
+                    </div>
+                    <div class="message-time" id="welcomeTime"></div>
+                </div>
+            </div>
+
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="message bot">
+                    <div class="message-avatar">🤖</div>
+                    <div class="message-content">
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <span style="margin-left: 10px; color: #666; font-size: 14px;">AI sedang mengetik...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-input-container">
+            <div class="quick-actions">
+                <div class="quick-action" onclick="sendQuickMessage('Apa itu OSA dan bagaimana dampaknya?')">
+                    🔬 Apa itu OSA?
+                </div>
+                <div class="quick-action" onclick="sendQuickMessage('Bagaimana cara setup SleepSense?')">
+                    🔧 Setup SleepSense
+                </div>
+                <div class="quick-action" onclick="sendQuickMessage('Device saya error, bagaimana troubleshoot?')">
+                    🛠️ Troubleshooting
+                </div>
+                <div class="quick-action" onclick="sendQuickMessage('AHI saya 25, apa artinya?')">
+                    📊 Interpretasi AHI
+                </div>
+                <div class="quick-action" onclick="sendQuickMessage('Tips untuk tidur yang lebih baik?')">
+                    💤 Sleep Tips
+                </div>
+            </div>
+            
+            <div class="chat-input-wrapper">
+                <textarea 
+                    class="chat-input" 
+                    id="messageInput" 
+                    placeholder="Tanyakan tentang OSA, SleepSense, atau kesehatan tidur..."
+                    rows="1"
+                ></textarea>
+                <button class="send-button" id="sendButton" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="connection-status" id="connectionStatus">
+        <i class="fas fa-wifi"></i> Connected to OSA Assistant
+    </div>
+
+    <script>
+        // Configuration
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3978' 
+            : window.location.origin;
+        
+        // Global variables
+        let isTyping = false;
+        let messageCount = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupEventListeners();
+            setWelcomeTime();
+            autoResizeTextarea();
+            checkServerConnection();
+        });
+
+        function setupEventListeners() {
+            const messageInput = document.getElementById('messageInput');
+            const sendButton = document.getElementById('sendButton');
+
+            // Enter key to send message
+            messageInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (!isTyping && messageInput.value.trim()) {
+                        sendMessage();
+                    }
+                }
+            });
+
+            // Auto-resize textarea
+            messageInput.addEventListener('input', autoResizeTextarea);
+
+            // Focus input on load
+            messageInput.focus();
+        }
+
+        function autoResizeTextarea() {
+            const textarea = document.getElementById('messageInput');
+            textarea.style.height = 'auto';
+            textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+        }
+
+        function setWelcomeTime() {
+            const welcomeTime = document.getElementById('welcomeTime');
+            if (welcomeTime) {
+                welcomeTime.textContent = new Date().toLocaleTimeString('id-ID');
+            }
+        }
+
+        async function checkServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                const status = document.getElementById('connectionStatus');
+                if (data.status === 'healthy') {
+                    status.innerHTML = '<i class="fas fa-wifi"></i> Connected to OSA Assistant';
+                    status.className = 'connection-status';
+                } else {
+                    throw new Error('Server unhealthy');
+                }
+            } catch (error) {
+                console.error('Connection check failed:', error);
+                const status = document.getElementById('connectionStatus');
+                status.innerHTML = '<i class="fas fa-wifi"></i> Connection Error';
+                status.className = 'connection-status offline';
+            }
+        }
+
+        function sendQuickMessage(message) {
+            document.getElementById('messageInput').value = message;
+            sendMessage();
+        }
+
+        async function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (!message || isTyping) return;
+
+            // Clear input and disable sending
+            messageInput.value = '';
+            autoResizeTextarea();
+            isTyping = true;
+            updateSendButton();
+
+            // Add user message to chat
+            addMessage('user', message);
+
+            // Show typing indicator
+            showTypingIndicator();
+
+            try {
+                // Send to backend
+                const response = await fetch(`${API_BASE_URL}/api/chat/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        userId: `web-user-${Date.now()}`
+                    })
+                });
+
+                const data = await response.json();
+
+                // Hide typing indicator
+                hideTypingIndicator();
+
+                if (data.success) {
+                    // Add bot response
+                    addMessage('bot', data.response);
+                } else {
+                    throw new Error(data.error || 'Unknown error');
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                hideTypingIndicator();
+                addMessage('bot', `😔 Maaf, terjadi kesalahan teknis: ${error.message}. Silakan coba lagi atau periksa koneksi internet Anda.`);
+            } finally {
+                isTyping = false;
+                updateSendButton();
+                messageInput.focus();
+            }
+        }
+
+        function addMessage(sender, content) {
+            const messagesContainer = document.getElementById('chatMessages');
+            messageCount++;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `
+                <div class="message-avatar">
+                    ${sender === 'bot' ? '🤖' : '👤'}
+                </div>
+                <div class="message-content">
+                    ${formatMessageContent(content, sender)}
+                    <div class="message-time">${new Date().toLocaleTimeString('id-ID')}</div>
+                </div>
+            `;
+
+            // Insert before typing indicator
+            const typingIndicator = document.getElementById('typingIndicator');
+            messagesContainer.insertBefore(messageDiv, typingIndicator);
+
+            // Scroll to bottom
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
+        }
+
+        function formatMessageContent(content, sender) {
+            if (sender === 'user') {
+                return content.replace(/\n/g, '<br>');
+            }
+
+            // Format bot messages with better styling
+            let formatted = content
+                .replace(/\n/g, '<br>')
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // Add special styling for medical content
+            if (content.includes('OSA') || content.includes('Sleep Apnea') || content.includes('AHI')) {
+                formatted = '<div class="medical-content">' + formatted + '</div>';
+            } else if (content.includes('SleepSense') || content.includes('sensor') || content.includes('ESP32')) {
+                formatted = '<div class="technical-content">' + formatted + '</div>';
+            }
+
+            return formatted;
+        }
+
+        function showTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'block';
+            
+            // Scroll to bottom
+            const messagesContainer = document.getElementById('chatMessages');
+            setTimeout(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }, 100);
+        }
+
+        function hideTypingIndicator() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'none';
+        }
+
+        function updateSendButton() {
+            const sendButton = document.getElementById('sendButton');
+            if (isTyping) {
+                sendButton.disabled = true;
+                sendButton.innerHTML = '<div class="loading"></div>';
+            } else {
+                sendButton.disabled = false;
+                sendButton.innerHTML = '<i class="fas fa-paper-plane"></i>';
+            }
+        }
+
+        // Periodic connection check
+        setInterval(checkServerConnection, 30000); // Check every 30 seconds
+
+        // Handle offline/online events
+        window.addEventListener('online', function() {
+            checkServerConnection();
+        });
+
+        window.addEventListener('offline', function() {
+            const status = document.getElementById('connectionStatus');
+            status.innerHTML = '<i class="fas fa-wifi"></i> Offline';
+            status.className = 'connection-status offline';
+        });
+    </script>
+</body>
+</html>
